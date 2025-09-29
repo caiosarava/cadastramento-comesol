@@ -28,6 +28,11 @@
             background-color: #a0aec0; /* gray-400 */
             cursor: not-allowed;
         }
+        /* Estiliza o efeito de campo inválido */
+        input:invalid:not(:placeholder-shown), select:invalid:not(:placeholder-shown) {
+            border-color: #f56565 !important; /* red-500 */
+            box-shadow: 0 0 0 1px #f56565 !important;
+        }
     </style>
 </head>
 <body>
@@ -47,27 +52,24 @@
         <form id="solidarity-group-form" onsubmit="event.preventDefault(); saveGroupData();">
 
             <!-- SEÇÃO 1: DADOS DO GRUPO -->
-            <section class="mb-8 p-6 bg-green-50 rounded-lg border border-green-200">
+            <section id="group-data-section" class="mb-8 p-6 bg-green-50 rounded-lg border border-green-200">
                 <h2 class="text-xl font-semibold text-gray-700 mb-4 flex items-center">
-                    <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20h-5v-2a3 3 0 00-5.356-1.857M17 20v-2c0-.592-.323-1.137-.833-1.432m0 0a3.001 3.001 0 00-5.334 0M12 20v-2c0-.592-.323-1.137-.833-1.432M12 20v-2a3.001 3 0 00-5.334 0M4 18h5v2H4V18z"></path></svg>
+                    <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20h-5v-2a3 3 0 00-5.356-1.857M17 20v-2c0-.592-.323-1.137-.833-1.432m0 0a3.001 3.001 0 00-5.334 0M12 20v-2c0-.592-.323-1.137-.833-1.432M12 20v-2a3.001 3.001 0 00-5.334 0M4 18h5v2H4V18z"></path></svg>
                     Informações do Grupo
                 </h2>
                 
                 <div class="mb-4">
                     <label for="groupName" class="block text-sm font-medium text-gray-700">Nome do Grupo/Empreendimento *</label>
-                    <!-- Listener para reavaliar o botão -->
                     <input type="text" id="groupName" required oninput="updateMemberCountAndList()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 p-2 border">
                 </div>
                 
                 <div class="mb-4">
                     <label for="groupRepresentativeName" class="block text-sm font-medium text-gray-700">Nome do representante *</label>
-                    <!-- Listener para reavaliar o botão -->
                     <input type="text" id="groupRepresentativeName" required oninput="updateMemberCountAndList()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 p-2 border">
                 </div>
 
                 <div class="mb-4">
                     <label for="groupContact" class="block text-sm font-medium text-gray-700">E-mail de Contato *</label>
-                    <!-- Listener para reavaliar o botão -->
                     <input type="email" id="groupContact" required oninput="updateMemberCountAndList()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 p-2 border" placeholder="exemplo@dominio.com">
                 </div>
             </section>
@@ -207,11 +209,11 @@
                             <label for="memberMonthlyIncome" class="block text-xs font-medium text-gray-700">Qual a renda média mensal obtida no empreendimento? *</label>
                             <select id="memberMonthlyIncome" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border text-sm">
                                 <option value="" disabled selected>Selecione a faixa de Salário Mínimo (SM)</option>
-                                <option value="Ate 1 SM">Até 1 SM (R$ 1.412,00)</option>
-                                <option value="Mais de 1 SM ate 2 SM">Mais de 1 SM até 2 SM (R$ 1.412,01 a R$ 2.824,00)</option>
-                                <option value="Mais de 2 SM ate 3 SM">Mais de 2 SM até 3 SM (R$ 2.824,01 a R$ 4.236,00)</option>
-                                <option value="Mais de 3 SM ate 5 SM">Mais de 3 SM até 5 SM (R$ 4.236,01 a R$ 7.060,00)</option>
-                                <option value="Acima de 5 SM">Acima de 5 SM (Mais de R$ 7.060,00)</option>
+                                <option value="Ate 1 SM">Até 1 SM</option>
+                                <option value="Mais de 1 SM ate 2 SM">Mais de 1 SM até 2 SM</option>
+                                <option value="Mais de 2 SM ate 3 SM">Mais de 2 SM até 3 SM</option>
+                                <option value="Mais de 3 SM ate 5 SM">Mais de 3 SM até 5 SM</option>
+                                <option value="Acima de 5 SM">Acima de 5 SM</option>
                             </select>
                         </div>
                         
@@ -281,10 +283,11 @@
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.44.4/+esm';
 
     // =========================================================================================
-    // ⚠️ ATENÇÃO: SUBSTITUA ESTES VALORES PELA SUA URL e CHAVE ANON DO SUPABASE ⚠️
+    // ⚠️ ATENÇÃO: É OBRIGATÓRIO PREENCHER CORRETAMENTE A URL e CHAVE ANON (PUBLIC) ⚠️
     // =========================================================================================
     const SUPABASE_URL = 'https://egarccprmvgqsvivnerc.supabase.co'; 
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVnYXJjY3BybXZncXN2aXZuZXJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxNjU0NTksImV4cCI6MjA3NDc0MTQ1OX0.Q_fdoeRnHx52EFOHIqk_icwe6auXDmmmLeJ266mSzEw'; 
+    // Por favor, substitua a chave abaixo (começa com eyJ) pela sua chave real 'anon public' do Supabase.
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVnYXJjY3BybXZncXN2aXZuZXJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxNjU0NTksImV4cCI6MjA3NDc0MTQ1OX0.Q_fdoeRnHx52EFOHIqk_icwe6auXDmmmLeJ266mSzEw'; // <---- Substitua este valor!
     const SUPABASE_TABLE_NAME = 'solidarity_economy_groups'; // Nome da sua tabela
 
     // Variáveis globais
@@ -298,13 +301,28 @@
     window.customAlert = customAlert;
     window.closeCustomAlert = closeCustomAlert;
     window.toggleOtherActivityField = toggleOtherActivityField;
-    window.updateMemberCountAndList = updateMemberCountAndList; // Exposto globalmente
+    window.updateMemberCountAndList = updateMemberCountAndList; 
+    
+    /**
+     * Verifica a validade APENAS dos campos da seção "Informações do Grupo".
+     * @returns {boolean} True se todos os campos de grupo estiverem válidos e preenchidos.
+     */
+    function checkGroupFieldsValidity() {
+        const nameInput = document.getElementById('groupName');
+        const representativeInput = document.getElementById('groupRepresentativeName');
+        const contactInput = document.getElementById('groupContact');
+        
+        // Verifica se os elementos existem e se a validade nativa do HTML é true
+        const isNameValid = nameInput ? nameInput.checkValidity() : false;
+        const isRepresentativeValid = representativeInput ? representativeInput.checkValidity() : false;
+        const isContactValid = contactInput ? contactInput.checkValidity() : false;
+
+        return isNameValid && isRepresentativeValid && isContactValid;
+    }
+
 
     // --- FUNÇÕES DE UTILDADE DO UI ---
 
-    /**
-     * Exibe um modal de alerta customizado.
-     */
     function customAlert(title, message, isError = true) {
         const modal = document.getElementById('custom-alert-modal');
         const titleElement = document.getElementById('alert-title');
@@ -336,10 +354,8 @@
     function setLoading(isLoading) {
         const button = document.getElementById('save-button');
         
-        // Verifica se o botão existe antes de manipulá-lo
         if (!button) return; 
 
-        // Se estiver carregando, sempre desabilita
         button.disabled = isLoading;
 
         if (isLoading) {
@@ -358,13 +374,12 @@
      * Atualiza a contagem e a lista de membros, e verifica as condições para habilitar o botão de salvar.
      */
     function updateMemberCountAndList() {
-        const form = document.getElementById('solidarity-group-form');
         const memberCountElement = document.getElementById('member-count');
         const listContainer = document.getElementById('member-list-container');
         const saveButton = document.getElementById('save-button');
         const saveStatus = document.getElementById('save-status');
 
-        if (!memberCountElement || !listContainer || !saveButton || !saveStatus || !form) {
+        if (!memberCountElement || !listContainer || !saveButton || !saveStatus) {
             console.warn("Elementos do UI não encontrados. Pulando atualização.");
             return;
         }
@@ -375,43 +390,20 @@
         
         // 2. VERIFICAÇÃO DE VALIDADE
         const isSupabaseReady = supabase !== null;
-        // CRÍTICO: Clona o formulário para verificar a validade sem disparar a validação visual (reportValidity) imediatamente
-        const isGroupDataValid = form.checkValidity(); 
+        // Usa a função de validação isolada para evitar campos de membro vazios
+        const isGroupDataValid = checkGroupFieldsValidity(); 
         
         const canSave = isGroupDataValid && members.length > 0 && isSupabaseReady;
         
-        // ** DEBUG LOG APRIMORADO **
-        console.log("--- Validação do Botão ---");
-        console.log(`1. Supabase Pronto (isSupabaseReady): ${isSupabaseReady}`);
-        console.log(`2. Dados do Grupo Válidos (isGroupDataValid): ${isGroupDataValid}`);
-        console.log(`3. Membros Adicionados (members.length > 0): ${members.length > 0} (${members.length} membros)`);
-        
-        if (!isGroupDataValid) {
-            // Tenta encontrar o primeiro campo inválido APENAS dentro da seção de Informações do Grupo
-            const invalidGroupField = form.querySelector('#groupName:invalid, #groupRepresentativeName:invalid, #groupContact:invalid');
-            if (invalidGroupField) {
-                 console.warn(`❌ CAMPO INVÁLIDO DETECTADO: O botão Salvar falhou porque o campo ID: "${invalidGroupField.id}" está inválido (Vazio ou Email Inválido). Preencha-o corretamente!`);
-                 // Opcional: faz o campo inválido piscar ou receber foco se você quiser um feedback visual mais agressivo.
-            } else {
-                 // Este é o caso mais raro, onde checkValidity() é false, mas querySelector(':invalid') não encontra.
-                 console.warn("isGroupDataValid é false, mas não consegui encontrar o elemento ':invalid'. Verifique se todos os campos obrigatórios do grupo foram preenchidos.");
-            }
-        }
-        
-        console.log(`Resultado Final (canSave): ${canSave}`);
-        console.log("--------------------------");
-        // ** FIM DO DEBUG LOG **
-
         // 3. LÓGICA DE HABILITAÇÃO DO BOTÃO E MENSAGEM DE STATUS
         saveButton.disabled = !canSave;
         
         if (!isSupabaseReady) {
-            saveStatus.textContent = '⚠️ ERRO DE CONFIGURAÇÃO: O Supabase não está pronto. Verifique as chaves no código-fonte.';
+            saveStatus.textContent = '⚠️ ERRO DE CONFIGURAÇÃO: O Supabase não está pronto. Preencha a URL e a Chave Anon.';
             saveButton.disabled = true; 
         } else if (members.length === 0) {
              saveStatus.textContent = 'É necessário adicionar pelo menos um membro para salvar o grupo.';
         } else if (!isGroupDataValid) {
-            // Se a validação falhar, reportValidity não é chamado aqui, mas o status avisa o usuário.
             saveStatus.textContent = '⚠️ Preencha todos os campos obrigatórios das Informações do Grupo (acima) para habilitar o salvamento.';
         } else { // canSave is true
             saveStatus.textContent = '✅ Pronto para salvar! Clique no botão Salvar Cadastro do Grupo.';
@@ -489,14 +481,14 @@
         ];
 
         let isFormValid = true;
+        let firstInvalidElement = null;
 
         // 1. Validação dos campos obrigatórios fixos 
         for (const id of requiredFieldIds) {
             const input = document.getElementById(id);
             if (input && !input.checkValidity()) {
-                input.reportValidity(); // Mostra o erro nativo
+                if (!firstInvalidElement) firstInvalidElement = input;
                 isFormValid = false;
-                break; // Para na primeira falha para exibir o erro
             }
         }
         
@@ -506,12 +498,14 @@
         
         if (isFormValid && otherActivityToggle === 'Sim' && otherActivityInput) {
             if (!otherActivityInput.checkValidity()) {
-                otherActivityInput.reportValidity();
+                if (!firstInvalidElement) firstInvalidElement = otherActivityInput;
                 isFormValid = false;
             }
         }
 
         if (!isFormValid) {
+            // Reporta a validade no primeiro elemento inválido
+            if (firstInvalidElement) firstInvalidElement.reportValidity();
             return; // Interrompe a função se a validação falhar
         }
 
@@ -548,7 +542,6 @@
         const solidarityInvolvement = document.getElementById('memberSolidarityInvolvement')?.value.trim();
         const otherActivity = otherActivityInput ? otherActivityInput.value.trim() : '';
         
-        // Verificação adicional para garantir que não estamos adicionando membros com campos críticos nulos
         if (!name || !cpf || !email) {
             customAlert("Erro Interno de Campo", "Um campo crítico necessário está ausente. Verifique os IDs do HTML.", true);
             return;
@@ -566,7 +559,7 @@
             email,
             rg,
             cpf,
-            cnpj: cnpj || null, // Opcional
+            cnpj: cnpj || null, 
 
             // Dados Demográficos e Sociais
             education,
@@ -587,7 +580,7 @@
         
         console.log(`Membro adicionado: ${newMember.name}. Total de membros: ${members.length}`); 
 
-        // 5. Limpa os campos do DIV de adição de membro manualmente
+        // 5. Limpa os campos do DIV de adição de membro
         const inputsToClear = document.querySelectorAll('#member-add-form input, #member-add-form select');
         inputsToClear.forEach(input => {
             if (input.type !== 'submit' && input.type !== 'button') {
@@ -599,7 +592,7 @@
             }
         });
 
-        // 6. Assegura que o campo condicional 'Outra Atividade' seja escondido e não obrigatório após a limpeza
+        // 6. Assegura que o campo condicional 'Outra Atividade' seja escondido e não obrigatório
         const memberOtherActivityToggleEl = document.getElementById('memberOtherActivityToggle');
         if (memberOtherActivityToggleEl) memberOtherActivityToggleEl.value = ''; 
         
@@ -608,7 +601,7 @@
              otherActivityInput.removeAttribute('required');
         }
 
-        // CHAMADA CRÍTICA: Atualiza a lista visual e reavalia a habilitação do botão!
+        // Atualiza a lista visual e reavalia a habilitação do botão!
         updateMemberCountAndList(); 
         
         const saveStatus = document.getElementById('save-status');
@@ -621,7 +614,7 @@
         if (index >= 0 && index < members.length) {
             const removedName = members[index].name;
             members.splice(index, 1);
-            // CHAMADA CRÍTICA: Atualiza a lista visual e reavalia a habilitação do botão!
+            // Atualiza a lista visual e reavalia a habilitação do botão!
             updateMemberCountAndList(); 
             const saveStatus = document.getElementById('save-status');
             if (saveStatus) {
@@ -636,59 +629,55 @@
      * Inicializa o cliente Supabase.
      */
     function initSupabase() {
-        // ZERA A LISTA DE MEMBROS AO INICIAR
         members = []; 
 
         const dbStatus = document.getElementById('db-status');
         if (!dbStatus) {
-             console.error("Elemento 'db-status' não encontrado. Não é possível mostrar o status da conexão.");
+             console.error("Elemento 'db-status' não encontrado.");
         }
 
-        // ** VERIFICAÇÃO DE CONFIGURAÇÃO ROBUSTA **
-        if (SUPABASE_URL.includes("SUA_URL_SUPABASE_AQUI") || SUPABASE_ANON_KEY.includes("SUA_CHAVE_ANON_AQUI")) {
-            const errorMessage = "❌ ERRO FATAL: Configuração Supabase ausente. Preencha os placeholders SUPABASE_URL e SUPABASE_ANON_KEY no código-fonte.";
+        if (SUPABASE_ANON_KEY.includes("SUA_CHAVE_ANON_PUBLIC_AQUI")) {
+            const errorMessage = "❌ ERRO FATAL: Configuração Supabase ausente. Preencha o placeholder SUPABASE_ANON_KEY no código-fonte.";
             console.error(errorMessage);
             if(dbStatus) dbStatus.textContent = 'Configuração Ausente';
             
-            // Define supabase como null e chama o update para mostrar a mensagem de erro no save-status
             supabase = null; 
-            updateMemberCountAndList(); // CRÍTICO: Dispara o check para atualizar a mensagem de erro
+            updateMemberCountAndList(); 
             return;
         }
         
         try {
+            // Log para debug
+            console.log(`[Supabase Debug] Conectando a URL: ${SUPABASE_URL}`);
+            console.log(`[Supabase Debug] Usando chave ANON (verifique se começa com 'eyJ'): ${SUPABASE_ANON_KEY.substring(0, 10)}...`);
+
             // 1. Inicializa o cliente Supabase
             supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             if(dbStatus) dbStatus.textContent = '✅ Conectado ao Supabase';
-            // CHAMADA CRÍTICA: Tenta habilitar o botão assim que o Supabase estiver pronto.
             updateMemberCountAndList(); 
 
         } catch (error) {
             console.error("Erro ao inicializar Supabase:", error);
-            customAlert("Erro no Supabase", `Falha ao iniciar o cliente: ${error.message}`, true);
+            customAlert("Erro no Supabase", `Falha ao iniciar o cliente: ${error.message}. Verifique sua URL e Chave Anon.`, true);
             if(dbStatus) dbStatus.textContent = 'Erro na Inicialização';
             supabase = null;
-            updateMemberCountAndList(); // Atualiza o status de erro
+            updateMemberCountAndList(); 
         }
     }
     
     // Função principal para salvar o grupo
     async function saveGroupData() {
-        const form = document.getElementById('solidarity-group-form');
-
-        // VALIDAÇÃO CRÍTICA (Dispara feedback visual nativo)
-        if (!form.checkValidity()) {
-            form.reportValidity(); 
+        // Validações de UI e estado (RLS é tratado no Supabase)
+        if (!checkGroupFieldsValidity()) {
+            document.getElementById('groupName')?.reportValidity();
+            document.getElementById('groupRepresentativeName')?.reportValidity();
+            document.getElementById('groupContact')?.reportValidity(); 
             customAlert("Dados Incompletos", "Por favor, preencha todos os campos obrigatórios nas **Informações do Grupo**.", true);
             return;
         }
         
-        if (supabase === null) {
-            customAlert("Acesso Negado", "O sistema de salvamento não está ativo. Verifique a configuração do Supabase.", true);
-            return;
-        }
-        if (members.length === 0) {
-            customAlert("Dados Incompletos", "É necessário adicionar pelo menos um membro para salvar o grupo.", true);
+        if (supabase === null || members.length === 0) {
+            customAlert("Ação Inválida", "Verifique a conexão com o Supabase e se há membros adicionados.", true);
             return;
         }
 
@@ -706,7 +695,7 @@
             group_representative_name: groupRepresentativeName, 
             group_contact: groupContact,
             members_count: members.length,
-            // Armazena todos os dados do grupo e membros em um objeto JSON (recomendado para estruturas complexas no Supabase)
+            // Armazena todos os dados do grupo e membros em um objeto JSON
             submission_data: JSON.stringify({
                 group_contact: groupContact,
                 members: members,
@@ -723,7 +712,7 @@
             
             if (error) throw error;
             
-            const documentId = data[0].id; // Pega o ID gerado pelo Supabase
+            const documentId = data[0].id; 
 
             if (saveStatus) saveStatus.textContent = `🎉 Sucesso! Grupo "${groupName}" salvo com ID ${documentId}.`;
             customAlert("Salvo com Sucesso", `O cadastro do grupo "${groupName}" foi salvo no Supabase! ID: ${documentId}`, false);
@@ -732,16 +721,15 @@
             document.getElementById('solidarity-group-form').reset();
             members = [];
             
-            // Reavalia o estado após limpar o formulário para desabilitar o botão novamente
             updateMemberCountAndList(); 
 
         } catch (error) {
             console.error("Erro ao salvar dados do grupo no Supabase:", error);
-            if (saveStatus) saveStatus.textContent = '❌ Erro ao salvar dados. Verifique o console.';
-            // Mensagem de erro aprimorada para orientar o usuário sobre RLS/Schema
+            if (saveStatus) saveStatus.textContent = '❌ Erro ao salvar dados. Verifique a consola.';
+            // Mensagem de erro aprimorada para o RLS
             customAlert(
-                "Erro ao Salvar", 
-                `Ocorreu um erro ao salvar no Supabase: ${error.message}. Isso geralmente ocorre devido à falta de **permissão de inserção** (RLS) ou erro no nome da tabela/coluna. Por favor, verifique se a tabela '${SUPABASE_TABLE_NAME}' existe, se as colunas estão corretas e se a política de RLS permite 'INSERT' para a função 'anon'.`, 
+                "Erro de Permissão (RLS)", 
+                `Ocorreu um erro ao salvar no Supabase: ${error.message}. Isso significa que sua chave ANON pode estar incorreta ou a política RLS não está ativa para o INSERT. Por favor, verifique a chave e a política de RLS.`, 
                 true
             );
         } finally {
