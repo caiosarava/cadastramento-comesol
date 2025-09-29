@@ -293,24 +293,47 @@
 
     // --- FUNÇÕES DE UTILDADE DO UI ---
 
+    /**
+     * Exibe um modal de alerta customizado.
+     * Adicionadas verificações de nulidade para evitar o erro "Cannot read properties of null".
+     */
     function customAlert(title, message, isError = true) {
         const modal = document.getElementById('custom-alert-modal');
-        document.getElementById('alert-title').textContent = title;
-        document.getElementById('alert-message').textContent = message;
-        document.getElementById('alert-title').className = isError ? 'text-lg font-bold mb-3 text-red-600' : 'text-lg font-bold mb-3 text-green-600';
+        const titleElement = document.getElementById('alert-title');
+        const messageElement = document.getElementById('alert-message');
+
+        // Se algum elemento essencial do modal não for encontrado, loga um erro e usa um fallback simples.
+        if (!modal || !titleElement || !messageElement) {
+            console.error(`Falha ao exibir alerta: ${title} - ${message}. Um ou mais elementos do modal não foram encontrados no DOM.`);
+            // Fallback para o alert nativo, que é menos intrusivo que o alert() em iFrames.
+            document.getElementById('save-status').textContent = `[ERRO DE UI] ${title}: ${message}`;
+            return;
+        }
+
+        titleElement.textContent = title;
+        messageElement.textContent = message;
+        // Atualiza a classe de cor da borda/título
+        titleElement.className = isError ? 'text-lg font-bold mb-3 text-red-600' : 'text-lg font-bold mb-3 text-green-600';
+        
         modal.classList.remove('hidden');
         modal.classList.add('flex');
     }
 
     function closeCustomAlert() {
         const modal = document.getElementById('custom-alert-modal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
+        // Adiciona verificação de nulidade
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
     }
 
     function setLoading(isLoading) {
         const button = document.getElementById('save-button');
         
+        // Verifica se o botão existe antes de manipulá-lo
+        if (!button) return; 
+
         // Mantém o botão desabilitado se a conexão Supabase falhou
         if (supabase === null && !isLoading) {
             button.disabled = true;
@@ -330,23 +353,32 @@
     }
 
     function updateMemberCountAndList() {
-        document.getElementById('member-count').textContent = members.length;
+        const memberCountElement = document.getElementById('member-count');
         const listContainer = document.getElementById('member-list-container');
+        const noMembersMessage = document.getElementById('no-members-message');
+        const saveButton = document.getElementById('save-button');
+
+        if (!memberCountElement || !listContainer || !noMembersMessage || !saveButton) {
+            console.warn("Elementos do UI de membros não encontrados. Pulando atualização.");
+            return;
+        }
+        
+        memberCountElement.textContent = members.length;
         listContainer.innerHTML = ''; // Limpa a lista
 
         // Verifica os campos do grupo para habilitação do botão Salvar
-        const groupName = document.getElementById('groupName').value.trim();
-        const groupContact = document.getElementById('groupContact').value.trim();
-        const groupRepresentativeName = document.getElementById('groupRepresentativeName').value.trim();
+        const groupName = document.getElementById('groupName')?.value.trim();
+        const groupContact = document.getElementById('groupContact')?.value.trim();
+        const groupRepresentativeName = document.getElementById('groupRepresentativeName')?.value.trim();
         const isGroupDataValid = (groupName && groupContact && groupRepresentativeName);
         
         // O botão de salvar só é habilitado se houver membros E se os campos de grupo estiverem preenchidos E se o Supabase estiver pronto
-        document.getElementById('save-button').disabled = !(isGroupDataValid && members.length > 0 && supabase !== null);
+        saveButton.disabled = !(isGroupDataValid && members.length > 0 && supabase !== null);
 
         if (members.length === 0) {
-            document.getElementById('no-members-message').classList.remove('hidden');
+            noMembersMessage.classList.remove('hidden');
         } else {
-            document.getElementById('no-members-message').classList.add('hidden');
+            noMembersMessage.classList.add('hidden');
         }
 
         members.forEach((member, index) => {
@@ -378,9 +410,13 @@
     // --- LÓGICA DE MEMBROS (MANTIDA) ---
 
     function toggleOtherActivityField() {
-        const toggle = document.getElementById('memberOtherActivityToggle').value;
+        const toggleElement = document.getElementById('memberOtherActivityToggle');
         const fieldContainer = document.getElementById('memberOtherActivityField');
+        
+        if (!toggleElement || !fieldContainer) return;
 
+        const toggle = toggleElement.value;
+        
         if (toggle === 'Sim') {
             fieldContainer.classList.remove('hidden');
         } else {
@@ -503,10 +539,17 @@
         document.getElementById('memberSolidarityInvolvement').value = '';
         document.getElementById('memberOtherActivityToggle').value = '';
         document.getElementById('memberOtherActivity').value = '';
-        document.getElementById('memberOtherActivityField').classList.add('hidden');
+        
+        const otherActivityField = document.getElementById('memberOtherActivityField');
+        if (otherActivityField) {
+            otherActivityField.classList.add('hidden');
+        }
 
         updateMemberCountAndList();
-        document.getElementById('save-status').textContent = `Membro ${name} adicionado com sucesso!`;
+        const saveStatus = document.getElementById('save-status');
+        if (saveStatus) {
+            saveStatus.textContent = `Membro ${name} adicionado com sucesso!`;
+        }
     }
 
     function removeMember(index) {
@@ -514,7 +557,10 @@
             const removedName = members[index].name;
             members.splice(index, 1);
             updateMemberCountAndList();
-            document.getElementById('save-status').textContent = `Membro ${removedName} removido.`;
+            const saveStatus = document.getElementById('save-status');
+            if (saveStatus) {
+                saveStatus.textContent = `Membro ${removedName} removido.`;
+            }
         }
     }
 
@@ -524,12 +570,18 @@
      * Inicializa o cliente Supabase.
      */
     function initSupabase() {
+        const dbStatus = document.getElementById('db-status');
+        if (!dbStatus) {
+             console.error("Elemento 'db-status' não encontrado. Não é possível mostrar o status da conexão.");
+             // Continua a tentativa de inicializar o Supabase, mas sem atualizar o status UI.
+        }
+
         // ** VERIFICAÇÃO DE CONFIGURAÇÃO ROBUSTA **
         if (SUPABASE_URL.includes("SUA_URL_SUPABASE_AQUI") || SUPABASE_ANON_KEY.includes("SUA_CHAVE_ANON_AQUI")) {
             const errorMessage = "❌ ERRO FATAL: Configuração Supabase ausente. Preencha os placeholders SUPABASE_URL e SUPABASE_ANON_KEY no código-fonte.";
             console.error(errorMessage);
             customAlert("Configuração Supabase Ausente", errorMessage, true);
-            document.getElementById('db-status').textContent = 'Configuração Ausente';
+            if(dbStatus) dbStatus.textContent = 'Configuração Ausente';
             document.getElementById('save-button').disabled = true;
             return;
         }
@@ -537,14 +589,15 @@
         try {
             // 1. Inicializa o cliente Supabase
             supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            document.getElementById('db-status').textContent = '✅ Conectado ao Supabase';
+            if(dbStatus) dbStatus.textContent = '✅ Conectado ao Supabase';
             // Habilita o botão se já houver dados no formulário
             updateMemberCountAndList(); 
 
         } catch (error) {
             console.error("Erro ao inicializar Supabase:", error);
+            // O erro original estava aqui, resolvido com as verificações de nulidade em customAlert
             customAlert("Erro no Supabase", `Falha ao iniciar o cliente: ${error.message}`, true);
-            document.getElementById('db-status').textContent = 'Erro na Inicialização';
+            if(dbStatus) dbStatus.textContent = 'Erro na Inicialização';
             supabase = null;
         }
     }
@@ -561,11 +614,12 @@
         }
 
         setLoading(true);
-        document.getElementById('save-status').textContent = 'Preparando para salvar...';
+        const saveStatus = document.getElementById('save-status');
+        if (saveStatus) saveStatus.textContent = 'Preparando para salvar...';
 
-        const groupName = document.getElementById('groupName').value.trim();
-        const groupContact = document.getElementById('groupContact').value.trim();
-        const groupRepresentativeName = document.getElementById('groupRepresentativeName').value.trim(); 
+        const groupName = document.getElementById('groupName')?.value.trim();
+        const groupContact = document.getElementById('groupContact')?.value.trim();
+        const groupRepresentativeName = document.getElementById('groupRepresentativeName')?.value.trim(); 
         
         // Verificação dos dados do grupo
         if (!groupName || !groupContact || !groupRepresentativeName) {
@@ -599,11 +653,11 @@
             
             const documentId = data[0].id; // Pega o ID gerado pelo Supabase
 
-            document.getElementById('save-status').textContent = `🎉 Sucesso! Grupo "${groupName}" salvo com ID ${documentId}.`;
+            if (saveStatus) saveStatus.textContent = `🎉 Sucesso! Grupo "${groupName}" salvo com ID ${documentId}.`;
             customAlert("Salvo com Sucesso", `O cadastro do grupo "${groupName}" foi salvo no Supabase! ID: ${documentId}`, false);
         } catch (error) {
             console.error("Erro ao salvar dados do grupo no Supabase:", error);
-            document.getElementById('save-status').textContent = '❌ Erro ao salvar dados. Verifique o console.';
+            if (saveStatus) saveStatus.textContent = '❌ Erro ao salvar dados. Verifique o console.';
             customAlert("Erro ao Salvar", `Ocorreu um erro ao salvar no Supabase: ${error.message}. Verifique se a tabela '${SUPABASE_TABLE_NAME}' existe e se o RLS (Row Level Security) permite 'INSERT' para a função 'anon'.`, true);
         } finally {
             setLoading(false);
