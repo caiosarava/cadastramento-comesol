@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cadastro Anual - COMESOL</title>
     <!-- Carregamento do Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -20,8 +21,12 @@
             background-color: #48bb78; /* green-500 */
             transition: background-color 0.3s;
         }
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
             background-color: #38a169; /* green-600; */
+        }
+        .btn-primary:disabled {
+            background-color: #a0aec0; /* gray-400 */
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -50,17 +55,20 @@
                 
                 <div class="mb-4">
                     <label for="groupName" class="block text-sm font-medium text-gray-700">Nome do Grupo/Empreendimento *</label>
-                    <input type="text" id="groupName" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 p-2 border">
+                    <!-- CORREÇÃO APLICADA: oninput para atualização imediata -->
+                    <input type="text" id="groupName" required oninput="updateMemberCountAndList()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 p-2 border">
                 </div>
                 
                 <div class="mb-4">
                     <label for="groupRepresentativeName" class="block text-sm font-medium text-gray-700">Nome do representante *</label>
-                    <input type="text" id="groupRepresentativeName" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 p-2 border">
+                    <!-- CORREÇÃO APLICADA: oninput para atualização imediata -->
+                    <input type="text" id="groupRepresentativeName" required oninput="updateMemberCountAndList()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 p-2 border">
                 </div>
 
                 <div class="mb-4">
                     <label for="groupContact" class="block text-sm font-medium text-gray-700">E-mail de Contato *</label>
-                    <input type="email" id="groupContact" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 p-2 border" placeholder="exemplo@dominio.com">
+                    <!-- CORREÇÃO APLICADA: oninput para atualização imediata -->
+                    <input type="email" id="groupContact" required oninput="updateMemberCountAndList()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 p-2 border" placeholder="exemplo@dominio.com">
                 </div>
             </section>
 
@@ -289,6 +297,7 @@
     window.customAlert = customAlert;
     window.closeCustomAlert = closeCustomAlert;
     window.toggleOtherActivityField = toggleOtherActivityField;
+    window.updateMemberCountAndList = updateMemberCountAndList; // Exposto globalmente
 
     // --- FUNÇÕES DE UTILDADE DO UI ---
 
@@ -329,7 +338,7 @@
         // Verifica se o botão existe antes de manipulá-lo
         if (!button) return; 
 
-        // Mantém o botão desabilitado se a conexão Supabase falhou
+        // Mantém o botão desabilitado se a conexão Supabase falhou ou se não houver dados válidos
         if (supabase === null && !isLoading) {
             button.disabled = true;
             return;
@@ -342,11 +351,14 @@
             button.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Salvando...`;
         } else {
             button.classList.remove('bg-opacity-70');
-            // Restaura o ícone original e texto
-            button.innerHTML = `<svg id="save-icon" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-4 5l4-4m0 0l4 4m-4-4v12"></path></svg> Salvar Cadastro do Grupo`;
+            // Restaura o ícone original e texto (chama updateMemberCountAndList para reavaliar o estado final)
+            updateMemberCountAndList();
         }
     }
 
+    /**
+     * Atualiza a contagem e a lista de membros, e verifica as condições para habilitar o botão de salvar.
+     */
     function updateMemberCountAndList() {
         const memberCountElement = document.getElementById('member-count');
         const listContainer = document.getElementById('member-list-container');
@@ -361,15 +373,23 @@
         memberCountElement.textContent = members.length;
         listContainer.innerHTML = ''; // Limpa a lista
 
-        // Verifica os campos do grupo para habilitação do botão Salvar
+        // 1. VERIFICAÇÃO DOS CAMPOS DO GRUPO
         const groupName = document.getElementById('groupName')?.value.trim();
         const groupContact = document.getElementById('groupContact')?.value.trim();
         const groupRepresentativeName = document.getElementById('groupRepresentativeName')?.value.trim();
+        
         const isGroupDataValid = (groupName && groupContact && groupRepresentativeName);
         
-        // O botão de salvar só é habilitado se houver membros E se os campos de grupo estiverem preenchidos E se o Supabase estiver pronto
-        saveButton.disabled = !(isGroupDataValid && members.length > 0 && supabase !== null);
+        // 2. LÓGICA DE HABILITAÇÃO DO BOTÃO
+        // O botão de salvar é habilitado se:
+        // A. Os dados do grupo são válidos E
+        // B. Há pelo menos um membro cadastrado E
+        // C. A conexão com o Supabase foi estabelecida
+        const canSave = isGroupDataValid && members.length > 0 && supabase !== null;
+        
+        saveButton.disabled = !canSave;
 
+        // 3. ATUALIZAÇÃO DA LISTA VISUAL
         if (members.length === 0) {
             noMembersMessage.classList.remove('hidden');
         } else {
@@ -540,7 +560,9 @@
             otherActivityField.classList.add('hidden');
         }
 
-        updateMemberCountAndList();
+        // 🚀 CHAMADA CRÍTICA: Atualiza a lista visual e reavalia a habilitação do botão!
+        updateMemberCountAndList(); 
+        
         const saveStatus = document.getElementById('save-status');
         if (saveStatus) {
             saveStatus.textContent = `Membro ${name} adicionado com sucesso!`;
@@ -551,7 +573,8 @@
         if (index >= 0 && index < members.length) {
             const removedName = members[index].name;
             members.splice(index, 1);
-            updateMemberCountAndList();
+            // 🚀 CHAMADA CRÍTICA: Atualiza a lista visual e reavalia a habilitação do botão!
+            updateMemberCountAndList(); 
             const saveStatus = document.getElementById('save-status');
             if (saveStatus) {
                 saveStatus.textContent = `Membro ${removedName} removido.`;
@@ -584,7 +607,7 @@
             // 1. Inicializa o cliente Supabase
             supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             if(dbStatus) dbStatus.textContent = '✅ Conectado ao Supabase';
-            // Habilita o botão se já houver dados no formulário
+            // 🚀 CHAMADA CRÍTICA: Tenta habilitar o botão assim que o Supabase estiver pronto.
             updateMemberCountAndList(); 
 
         } catch (error) {
@@ -648,6 +671,12 @@
 
             if (saveStatus) saveStatus.textContent = `🎉 Sucesso! Grupo "${groupName}" salvo com ID ${documentId}.`;
             customAlert("Salvo com Sucesso", `O cadastro do grupo "${groupName}" foi salvo no Supabase! ID: ${documentId}`, false);
+            
+            // Limpa o formulário e o estado após o sucesso
+            document.getElementById('solidarity-group-form').reset();
+            members = [];
+            updateMemberCountAndList();
+
         } catch (error) {
             console.error("Erro ao salvar dados do grupo no Supabase:", error);
             if (saveStatus) saveStatus.textContent = '❌ Erro ao salvar dados. Verifique o console.';
