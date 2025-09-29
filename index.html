@@ -380,11 +380,24 @@
         
         const canSave = isGroupDataValid && members.length > 0 && isSupabaseReady;
         
-        // ** DEBUG LOG ADICIONADO AQUI **
+        // ** DEBUG LOG APRIMORADO **
         console.log("--- Validação do Botão ---");
         console.log(`1. Supabase Pronto (isSupabaseReady): ${isSupabaseReady}`);
         console.log(`2. Dados do Grupo Válidos (isGroupDataValid): ${isGroupDataValid}`);
         console.log(`3. Membros Adicionados (members.length > 0): ${members.length > 0} (${members.length} membros)`);
+        
+        if (!isGroupDataValid) {
+            // Tenta encontrar o primeiro campo inválido APENAS dentro da seção de Informações do Grupo
+            const invalidGroupField = form.querySelector('#groupName:invalid, #groupRepresentativeName:invalid, #groupContact:invalid');
+            if (invalidGroupField) {
+                 console.warn(`❌ CAMPO INVÁLIDO DETECTADO: O botão Salvar falhou porque o campo ID: "${invalidGroupField.id}" está inválido (Vazio ou Email Inválido). Preencha-o corretamente!`);
+                 // Opcional: faz o campo inválido piscar ou receber foco se você quiser um feedback visual mais agressivo.
+            } else {
+                 // Este é o caso mais raro, onde checkValidity() é false, mas querySelector(':invalid') não encontra.
+                 console.warn("isGroupDataValid é false, mas não consegui encontrar o elemento ':invalid'. Verifique se todos os campos obrigatórios do grupo foram preenchidos.");
+            }
+        }
+        
         console.log(`Resultado Final (canSave): ${canSave}`);
         console.log("--------------------------");
         // ** FIM DO DEBUG LOG **
@@ -623,6 +636,9 @@
      * Inicializa o cliente Supabase.
      */
     function initSupabase() {
+        // ZERA A LISTA DE MEMBROS AO INICIAR
+        members = []; 
+
         const dbStatus = document.getElementById('db-status');
         if (!dbStatus) {
              console.error("Elemento 'db-status' não encontrado. Não é possível mostrar o status da conexão.");
