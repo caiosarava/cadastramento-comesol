@@ -272,8 +272,7 @@
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.44.4/+esm';
 
     // =========================================================================================
-    // CONFIGURAÇÃO SUPABASE
-    // ATENÇÃO: SUBSTITUA ESTES VALORES PELA SUA URL e CHAVE ANON DO SUPABASE
+    // ⚠️ ATENÇÃO: SUBSTITUA ESTES VALORES PELA SUA URL e CHAVE ANON DO SUPABASE ⚠️
     // =========================================================================================
     const SUPABASE_URL = 'https://egarccprmvgqsvivnerc.supabase.co'; 
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVnYXJjY3BybXZncXN2aXZuZXJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxNjU0NTksImV4cCI6MjA3NDc0MTQ1OX0.Q_fdoeRnHx52EFOHIqk_icwe6auXDmmmLeJ266mSzEw'; 
@@ -295,17 +294,14 @@
 
     /**
      * Exibe um modal de alerta customizado.
-     * Adicionadas verificações de nulidade para evitar o erro "Cannot read properties of null".
      */
     function customAlert(title, message, isError = true) {
         const modal = document.getElementById('custom-alert-modal');
         const titleElement = document.getElementById('alert-title');
         const messageElement = document.getElementById('alert-message');
 
-        // Se algum elemento essencial do modal não for encontrado, loga um erro e usa um fallback simples.
         if (!modal || !titleElement || !messageElement) {
             console.error(`Falha ao exibir alerta: ${title} - ${message}. Um ou mais elementos do modal não foram encontrados no DOM.`);
-            // Fallback para o alert nativo, que é menos intrusivo que o alert() em iFrames.
             document.getElementById('save-status').textContent = `[ERRO DE UI] ${title}: ${message}`;
             return;
         }
@@ -321,7 +317,6 @@
 
     function closeCustomAlert() {
         const modal = document.getElementById('custom-alert-modal');
-        // Adiciona verificação de nulidade
         if (modal) {
             modal.classList.add('hidden');
             modal.classList.remove('flex');
@@ -573,7 +568,6 @@
         const dbStatus = document.getElementById('db-status');
         if (!dbStatus) {
              console.error("Elemento 'db-status' não encontrado. Não é possível mostrar o status da conexão.");
-             // Continua a tentativa de inicializar o Supabase, mas sem atualizar o status UI.
         }
 
         // ** VERIFICAÇÃO DE CONFIGURAÇÃO ROBUSTA **
@@ -595,7 +589,6 @@
 
         } catch (error) {
             console.error("Erro ao inicializar Supabase:", error);
-            // O erro original estava aqui, resolvido com as verificações de nulidade em customAlert
             customAlert("Erro no Supabase", `Falha ao iniciar o cliente: ${error.message}`, true);
             if(dbStatus) dbStatus.textContent = 'Erro na Inicialização';
             supabase = null;
@@ -658,7 +651,12 @@
         } catch (error) {
             console.error("Erro ao salvar dados do grupo no Supabase:", error);
             if (saveStatus) saveStatus.textContent = '❌ Erro ao salvar dados. Verifique o console.';
-            customAlert("Erro ao Salvar", `Ocorreu um erro ao salvar no Supabase: ${error.message}. Verifique se a tabela '${SUPABASE_TABLE_NAME}' existe e se o RLS (Row Level Security) permite 'INSERT' para a função 'anon'.`, true);
+            // Mensagem de erro aprimorada para orientar o usuário sobre RLS/Schema
+            customAlert(
+                "Erro ao Salvar", 
+                `Ocorreu um erro ao salvar no Supabase: ${error.message}. Isso geralmente ocorre devido à falta de **permissão de inserção** (RLS) ou erro no nome da tabela/coluna. Por favor, verifique se a tabela '${SUPABASE_TABLE_NAME}' existe, se as colunas estão corretas e se a política de RLS permite 'INSERT' para a função 'anon'.`, 
+                true
+            );
         } finally {
             setLoading(false);
         }
