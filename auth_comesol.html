@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COMESOL - Acesso ao Cadastro</title>
+    <!-- Carregamento do Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Carregamento do Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e6f7e6; /* Verde claro de fundo */
+        }
+        .card {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        /* Cor principal do COMESOL (Verde Forte) */
+        .btn-primary {
+            background-color: #22c55e; /* green-500 */
+            transition: background-color 0.3s, transform 0.1s;
+        }
+        .btn-primary:hover:not(:disabled) {
+            background-color: #16a34a; /* green-600 */
+            transform: translateY(-1px);
+        }
+        .input-focus:focus {
+            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.5); /* green-500 com transparência */
+        }
+        /* Estilização da animação de loading */
+        .spinner {
+            border-top-color: #fff;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <!-- Container Principal do Auth -->
+    <div id="authContainer" class="card bg-white w-full max-w-md p-8 rounded-xl">
+        
+        <!-- Cabeçalho -->
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">COMESOL</h1>
+        <p class="text-center text-sm text-gray-500 mb-6">Acesso ao Cadastramento anual</p>
+        
+        <!-- Mensagem de Erro/Status -->
+        <div id="statusMessage" class="hidden p-3 mb-4 rounded-lg text-sm" role="alert"></div>
+
+        <!-- Formulários de Autenticação -->
+        <form id="authForm" onsubmit="handleAuth(event)">
+            
+            <!-- Campo de Email -->
+            <div class="mb-4">
+                <label for="email" class="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
+                <input type="email" id="email" required 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus" 
+                       placeholder="seu.email@exemplo.com">
+            </div>
+
+            <!-- Campo de Senha -->
+            <div class="mb-6">
+                <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+                <input type="password" id="password" required 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus" 
+                       placeholder="Mínimo 6 caracteres">
+            </div>
+
+            <!-- Botão de Ação (Login ou Cadastro) -->
+            <button type="submit" id="authButton" class="btn-primary text-white w-full py-2.5 rounded-lg text-lg font-semibold flex items-center justify-center transition duration-300" disabled>
+                <span id="buttonText">Entrar</span>
+                <div id="loadingSpinner" class="hidden spinner w-5 h-5 border-2 rounded-full border-gray-200 ml-2"></div>
+            </button>
+
+            <!-- Toggle entre Login e Cadastro -->
+            <div class="mt-4 text-center">
+                <p id="toggleText" class="text-sm text-gray-600">Não tem conta? 
+                    <a href="#" onclick="toggleMode(event)" class="text-blue-600 hover:text-blue-800 font-medium">Cadastre-se</a>
+                </p>
+            </div>
+        </form>
+
+        <!-- Painel de Usuário Logado -->
+        <div id="loggedInPanel" class="hidden text-center p-4">
+            <h2 class="text-2xl font-semibold text-green-700 mb-4">Acesso Confirmado!</h2>
+            <p class="text-gray-600 mb-2">Você está logado. Seu ID de Grupo (UID) é:</p>
+            <p id="userUid" class="bg-gray-100 text-gray-800 p-3 rounded-lg font-mono text-sm break-all mb-6"></p>
+            
+            <!-- Botão de Acessar Cadastro -->
+            <button onclick="redirectToCadastro()" class="btn-primary text-white w-full py-3 rounded-lg text-lg font-bold">
+                Acessar Cadastro Anual COMESOL
+            </button>
+
+            <!-- Botão de Sair -->
+            <button onclick="signOutUser()" class="mt-4 text-sm text-red-500 hover:text-red-700 font-medium">Sair da Conta</button>
+        </div>
+    </div>
+
+<script>
+    // Variáveis globais (fornecidas pelo Canvas)
+    const SUPABASE_URL = typeof __supabase_url !== 'undefined' ? __supabase_url : null;
+    const SUPABASE_ANON_KEY = typeof __supabase_anon_key !== 'undefined' ? __supabase_anon_key : null;
+
+    let supabase = null;
+    let currentMode = 'login'; // 'login' ou 'signup'
+
+    // Elementos da UI
+    const authForm = document.getElementById('authForm');
+    const authButton = document.getElementById('authButton');
+    const buttonText = document.getElementById('buttonText');
+    const toggleText = document.getElementById('toggleText');
+    const loggedInPanel = document.getElementById('loggedInPanel');
+    const authContainer = document.getElementById('authContainer');
+    const userUidDisplay = document.getElementById('userUid');
+    const statusMessage = document.getElementById('statusMessage');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+
+
+    /**
+     * 1. Configuração Inicial do Supabase
+     */
+    function initSupabase() {
+        if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+            displayStatus('❌ Erro de Configuração: Variáveis Supabase não encontradas.', 'bg-red-100 text-red-700');
+            console.error("Variáveis __supabase_url ou __supabase_anon_key não definidas.");
+            return;
+        }
+
+        try {
+            supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            authButton.disabled = false;
+            displayStatus('✅ Sistema Supabase pronto.', 'bg-green-100 text-green-700', 3000);
+            
+            // Inicia o monitoramento do estado de autenticação
+            setupAuthListener();
+            
+        } catch (e) {
+            displayStatus('❌ Erro ao inicializar o Supabase Client.', 'bg-red-100 text-red-700');
+            console.error("Erro ao inicializar o Supabase:", e);
+        }
+    }
+
+    /**
+     * Alterna entre os modos de Login e Cadastro (Signup).
+     */
+    function toggleMode(event) {
+        if (event) event.preventDefault();
+        
+        if (currentMode === 'login') {
+            currentMode = 'signup';
+            buttonText.textContent = 'Cadastrar Novo Grupo';
+            toggleText.innerHTML = 'Já tem conta? <a href="#" onclick="toggleMode(event)" class="text-blue-600 hover:text-blue-800 font-medium">Fazer Login</a>';
+        } else {
+            currentMode = 'login';
+            buttonText.textContent = 'Entrar';
+            toggleText.innerHTML = 'Não tem conta? <a href="#" onclick="toggleMode(event)" class="text-blue-600 hover:text-blue-800 font-medium">Cadastre-se</a>';
+        }
+        // Limpa a mensagem de status ao alternar
+        hideStatus();
+    }
+
+    /**
+     * 4. Lida com a submissão do formulário (Login ou Cadastro).
+     */
+    async function handleAuth(event) {
+        event.preventDefault();
+        
+        if (!supabase) {
+            displayStatus('❌ Sistema não inicializado. Tente recarregar a página.', 'bg-red-100 text-red-700');
+            return;
+        }
+
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value.trim();
+
+        if (password.length < 6) {
+            displayStatus('A senha deve ter no mínimo 6 caracteres.', 'bg-yellow-100 text-yellow-700');
+            return;
+        }
+
+        setLoading(true);
+        hideStatus();
+
+        let authAction;
+        if (currentMode === 'login') {
+            authAction = supabase.auth.signInWithPassword({ email, password });
+        } else {
+            authAction = supabase.auth.signUp({ email, password });
+        }
+
+        const { data, error } = await authAction;
+        setLoading(false);
+
+        if (error) {
+            console.error('Erro de Autenticação:', error);
+            let errorMessage = `Erro: ${error.message}`;
+            
+            if (error.message.includes("already registered")) {
+                errorMessage = "Este e-mail já está cadastrado. Tente fazer o login.";
+            } else if (error.message.includes("Invalid login credentials")) {
+                errorMessage = "Credenciais inválidas. Verifique seu e-mail e senha.";
+            }
+
+            displayStatus(`❌ ${errorMessage}`, 'bg-red-100 text-red-700');
+        } else if (currentMode === 'signup' && data.user && !data.session) {
+            // Caso de email confirmation (se ativado no Supabase)
+             displayStatus('✅ Cadastro realizado! Verifique seu email para confirmar sua conta.', 'bg-green-100 text-green-700', 10000);
+        }
+        // O onAuthStateChange cuidará do fluxo de sucesso de login/cadastro
+    }
+
+    /**
+     * 5. Monitoramento do Estado de Autenticação
+     */
+    function setupAuthListener() {
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (session && session.user) {
+                // Usuário logado ou recém-cadastrado
+                showLoggedInState(session.user.id);
+                hideStatus(); // Limpa status de sucesso/erro de login anterior
+            } else {
+                // Usuário deslogado
+                showAuthForm();
+            }
+        });
+    }
+
+    /**
+     * Exibe o painel de usuário logado e esconde o formulário de autenticação.
+     * @param {string} uid - O ID único do usuário Supabase.
+     */
+    function showLoggedInState(uid) {
+        authForm.classList.add('hidden');
+        loggedInPanel.classList.remove('hidden');
+        userUidDisplay.textContent = uid;
+        // Muda o título do card para um visual de sucesso
+        authContainer.classList.remove('bg-white');
+        authContainer.classList.add('bg-green-50'); 
+    }
+
+    /**
+     * Exibe o formulário de autenticação e esconde o painel de usuário logado.
+     */
+    function showAuthForm() {
+        authForm.classList.remove('hidden');
+        loggedInPanel.classList.add('hidden');
+        // Volta o título do card para o visual padrão
+        authContainer.classList.add('bg-white');
+        authContainer.classList.remove('bg-green-50'); 
+    }
+    
+    /**
+     * 6. Função de Sair (Logout)
+     */
+    async function signOutUser() {
+        setLoading(true);
+        const { error } = await supabase.auth.signOut();
+        setLoading(false);
+
+        if (error) {
+            console.error('Erro ao fazer logout:', error);
+            displayStatus('❌ Erro ao sair da conta. Tente novamente.', 'bg-red-100 text-red-700');
+        } else {
+            displayStatus('👋 Você saiu da conta com sucesso.', 'bg-green-100 text-green-700', 3000);
+            // O onAuthStateChange fará a transição para showAuthForm()
+        }
+    }
+
+    /**
+     * Redireciona o usuário para o arquivo de cadastro.
+     */
+    function redirectToCadastro() {
+        // Redireciona para o arquivo index.html, que contém o formulário de cadastro
+        window.location.href = 'index.html'; 
+    }
+
+
+    // --- Funções de UI Auxiliares ---
+
+    /**
+     * Exibe uma mensagem de status/erro na tela.
+     * @param {string} message - A mensagem a ser exibida.
+     * @param {string} className - Classes Tailwind para estilo (ex: 'bg-red-100 text-red-700').
+     * @param {number} duration - Duração em ms para esconder a mensagem (opcional).
+     */
+    function displayStatus(message, className, duration = 0) {
+        statusMessage.textContent = message;
+        statusMessage.className = `p-3 mb-4 rounded-lg text-sm ${className}`;
+        statusMessage.classList.remove('hidden');
+
+        if (duration > 0) {
+            setTimeout(hideStatus, duration);
+        }
+    }
+
+    function hideStatus() {
+        statusMessage.classList.add('hidden');
+    }
+
+    /**
+     * Alterna o estado de loading no botão.
+     */
+    function setLoading(isLoading) {
+        authButton.disabled = isLoading;
+        if (isLoading) {
+            buttonText.textContent = currentMode === 'login' ? 'Entrando...' : 'Cadastrando...';
+            loadingSpinner.classList.remove('hidden');
+        } else {
+            buttonText.textContent = currentMode === 'login' ? 'Entrar' : 'Cadastrar Novo Grupo';
+            loadingSpinner.classList.add('hidden');
+            // Reabilita o botão (caso já não estivesse por um erro de auth)
+            if (!SUPABASE_URL || !SUPABASE_ANON_KEY) authButton.disabled = true;
+        }
+    }
+    
+    // Polyfill simples para createClient (Supabase JS CDN)
+    // Isso garante que o código funcione mesmo que a função createClient não esteja globalmente disponível imediatamente.
+    const { createClient } = window.supabase;
+
+
+    // Inicializa o Supabase E o listener de estado ao carregar a janela
+    window.onload = function() {
+        initSupabase();
+    };
+</script>
+</body>
+</html>
