@@ -47,7 +47,7 @@
         
         <!-- Cabeçalho -->
         <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">COMESOL</h1>
-        <p class="text-center text-sm text-gray-500 mb-6">Acesso ao Cadastramento anual</p>
+        <p class="text-center text-sm text-gray-500 mb-6">Acesso ao Cadastro Anual de Grupos</p>
         
         <!-- Mensagem de Erro/Status -->
         <div id="statusMessage" class="hidden p-3 mb-4 rounded-lg text-sm" role="alert"></div>
@@ -103,8 +103,11 @@
 
 <script>
     // Variáveis globais (fornecidas pelo Canvas)
-    const SUPABASE_URL = typeof __supabase_url !== 'undefined' ? __supabase_url : null;
-    const SUPABASE_ANON_KEY = typeof __supabase_anon_key !== 'undefined' ? __supabase_anon_key : null;
+    // Se você estiver rodando em um ambiente que não seja o Canvas, substitua 'null' pelos valores reais do seu projeto Supabase:
+    // Exemplo: const SUPABASE_URL = 'https://seuprojeto.supabase.co';
+    // Exemplo: const SUPABASE_ANON_KEY = 'SEU_ANON_PUBLIC_KEY';
+    const SUPABASE_URL = typeof __supabase_url !== 'undefined' ? __supabase_url : 'https://egarccprmvgqsvivnerc.supabase.co';
+    const SUPABASE_ANON_KEY = typeof __supabase_anon_key !== 'undefined' ? __supabase_anon_key : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVnYXJjY3BybXZncXN2aXZuZXJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxNjU0NTksImV4cCI6MjA3NDc0MTQ1OX0.Q_fdoeRnHx52EFOHIqk_icwe6auXDmmmLeJ266mSzEw';
 
     let supabase = null;
     let currentMode = 'login'; // 'login' ou 'signup'
